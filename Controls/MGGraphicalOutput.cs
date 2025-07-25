@@ -1,4 +1,4 @@
-﻿using DivEditor;
+using DivEditor;
 using DivEditor.Controls;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
@@ -54,6 +54,7 @@ namespace Editor.Controls
         public static bool procMovingNewEgg = false;
         public static bool procMovingCopyObject = false;
         public static bool procMovingCopyEgg = false;
+        public static long objectPlacementStartTime = 0;
         int procMovObjCursOffsetX = 0;
         int procMovObjCursOffsetY = 0;
         int procMovObjCorInTileX;
@@ -220,9 +221,42 @@ namespace Editor.Controls
                         timer = Stopwatch.GetTimestamp();
                     }
                 }
+                
+                // Bezpieczeństwo: timeout dla umieszczania obiektów (30 sekund)
+                if ((procMovingNewObject || procMovingNewEgg) &&
+                    objectPlacementStartTime > 0 &&
+                    Stopwatch.GetTimestamp() - objectPlacementStartTime > 30L * Stopwatch.Frequency)
+                {
+                    // Anuluj umieszczanie po timeoucie
+                    if (procMovingNewObject)
+                    {
+                        for (int i = newObject.Count - 1; i >= 0; i--)
+                        {
+                            int objectIndex = newObject[i][0];
+                            if (objectIndex >= 0 && objectIndex < GameData.objects.Count)
+                            {
+                                GameData.objects.RemoveAt(objectIndex);
+                            }
+                        }
+                        procMovingNewObject = false;
+                        newObject.Clear();
+                    }
+                    if (procMovingNewEgg)
+                    {
+                        if (GameData.Eggs.Count > 0)
+                        {
+                            GameData.Eggs.RemoveAt(GameData.Eggs.Count - 1);
+                        }
+                        procMovingNewEgg = false;
+                    }
+                    ObjectBuffer.Clear();
+                    Cursor.Show();
+                    objectPlacementStartTime = 0;
+                }
+
                 if ((EditForm.selectTollBarPage == 1 ||
                     EditForm.selectTollBarPage == 2) &&
-                    cursorInWindow) // Обработка мыши для вкладки объектов
+                    cursorInWindow) // Обработка мыши для вкладки объектów
                 {
                     // Выбор объекта
                     if (mouseLBState &&
@@ -458,8 +492,24 @@ namespace Editor.Controls
                         procMovingObject = false;
                         procMovingCopyObject = false;
                     }
-                    // Перемещение нового болванчика
+                    // Anulowanie umieszczania jajka klawiszem ESC
                     if (procMovingNewEgg &&
+                        Keyboard.IsKeyDown(System.Windows.Forms.Keys.Escape) &&
+                        Stopwatch.GetTimestamp() - timer > 200000)
+                    {
+                        // Usuń ostatnio dodane jajko
+                        if (GameData.Eggs.Count > 0)
+                        {
+                            GameData.Eggs.RemoveAt(GameData.Eggs.Count - 1);
+                        }
+                        procMovingNewEgg = false;
+                        ObjectBuffer.Clear();
+                        Cursor.Show();
+                        objectPlacementStartTime = 0;
+                        timer = Stopwatch.GetTimestamp();
+                    }
+                    // Перемещение нового болванчика
+                    else if (procMovingNewEgg &&
                         !mouseLBState &&
                         Stopwatch.GetTimestamp() - timer > 20000)
                     {
@@ -477,8 +527,28 @@ namespace Editor.Controls
                         ObjectBuffer.Clear();
                         Cursor.Show();
                     }
+                    // Anulowanie umieszczania obiektu klawiszem ESC
+                    if (procMovingNewObject &&
+                        Keyboard.IsKeyDown(System.Windows.Forms.Keys.Escape) &&
+                        Stopwatch.GetTimestamp() - timer > 200000)
+                    {
+                        // Usuń nowo tworzone obiekty z listy GameData.objects
+                        for (int i = newObject.Count - 1; i >= 0; i--)
+                        {
+                            int objectIndex = newObject[i][0];
+                            if (objectIndex >= 0 && objectIndex < GameData.objects.Count)
+                            {
+                                GameData.objects.RemoveAt(objectIndex);
+                            }
+                        }
+                        procMovingNewObject = false;
+                        newObject.Clear();
+                        Cursor.Show();
+                        objectPlacementStartTime = 0;
+                        timer = Stopwatch.GetTimestamp();
+                    }
                     // Перемещение нового объекта
-                    if (newObject.Count > 0 && 
+                    else if (newObject.Count > 0 && 
                         procMovingNewObject &&
                         !mouseLBState &&
                         Stopwatch.GetTimestamp() - timer > 20000) 
@@ -507,6 +577,7 @@ namespace Editor.Controls
                         mouseLBState &&
                         Stopwatch.GetTimestamp() - timer > 20000)
                     {
+                        bool anyObjectPlaced = false;
                         for (int i = 0; i < newObject.Count; i++)
                         {
                             int tileX = tileBiasX + (newObject[i][3] / Vars.tileSize);
@@ -516,13 +587,16 @@ namespace Editor.Controls
                                 GameData.metaTileArray[tileY, tileX].AddObject(newObject[i][0]);
                                 GameData.objects[newObject[i][0]].AbsolutePixelPosition = new System.Drawing.Point(newObject[i][3] + tileBiasX * Vars.tileSize, newObject[i][4] + tileBiasY * Vars.tileSize);
                                 GameData.objects[newObject[i][0]].TilePosition = new System.Drawing.Point(tileX, tileY);
-                                procMovingNewObject = false;
+                                anyObjectPlaced = true;
                             }
                         }
+                        // Zawsze przywracamy kursor i kończymy umieszczanie, niezależnie od tego czy obiekty zostały umieszczone
+                        procMovingNewObject = false;
                         UpdateShowObjects();
                         newObject.Clear();
                         mouseClickHandler = false;
                         Cursor.Show();
+                        objectPlacementStartTime = 0;
                         timer = Stopwatch.GetTimestamp();
                     }
                     // Удаление объекта или болванчика

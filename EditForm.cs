@@ -1,4 +1,4 @@
-﻿using DivEditor.Controls;
+using DivEditor.Controls;
 using Editor.Controls;
 using DivEditor;
 using Lzo64;
@@ -916,6 +916,7 @@ namespace Editor
                 (MGGraphicalOutput.tileBiasY) * Vars.tileSize,
                 EggsListBox.SelectedIndex,1,-1,-1,-1,-1,GameData.Eggs.Count,GameData.worldMapNumber}));
                 MGGraphicalOutput.procMovingNewEgg = true;
+                MGGraphicalOutput.objectPlacementStartTime = System.Diagnostics.Stopwatch.GetTimestamp();
                 Cursor.Hide();
             }
         }
@@ -931,6 +932,7 @@ namespace Editor
             if (words.Length > 1 && int.TryParse(words[1], out int objectSelect))
             {
                 MGGraphicalOutput.procMovingNewObject = true;
+                MGGraphicalOutput.objectPlacementStartTime = System.Diagnostics.Stopwatch.GetTimestamp();
                 int objCount = GameData.MObjects[objectSelect].objects.Count;
                 for (int i = 0; i < objCount; i++)
                 {
