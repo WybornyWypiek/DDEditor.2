@@ -1044,7 +1044,7 @@ namespace Editor.Controls
         {
             return new Point(tileBiasX, tileBiasY);
         }
-        private static void UpdateScrollPosition()
+        public static void UpdateScrollPosition()
         {
             if (tileBiasX < 0) tileBiasX = 0;
             if (tileBiasX > Vars.maxHorizontalTails - 1 - WindowWidth / Vars.tileSize) tileBiasX = Vars.maxHorizontalTails - WindowWidth / Vars.tileSize;
