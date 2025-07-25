@@ -31,6 +31,7 @@ namespace Editor
         public static int selectTollBarPage = 0;
         public static int effects = 0;
         public static Timer? timer;
+        public static bool needScrollUpdate = false;
         private int treeViewCounter = 0;
         private int objectsTreeViewNodePrevious = 0;
         XmlDocument xmlDoc;
@@ -85,8 +86,8 @@ namespace Editor
                 // Восстанавливаем последние координаты пользователя
                 Editor.Controls.MGGraphicalOutput.tileBiasX = GameData.lastUserTileBiasX;
                 Editor.Controls.MGGraphicalOutput.tileBiasY = GameData.lastUserTileBiasY;
-                // Планируем обновление позиции скроллов в следующей кадре!!
-                Editor.Controls.MGGraphicalOutput.UpdateScrollPosition();
+                // Планируем обновление scrollów
+                needScrollUpdate = true;
                 
                 GameData.READY = true;
                 informationField.Text = $"Loading textures - Last position: {GameData.lastUserTileBiasX},{GameData.lastUserTileBiasY}";
@@ -177,8 +178,8 @@ namespace Editor
                     GameData.lastUserTileBiasY = 0;
                     Editor.Controls.MGGraphicalOutput.tileBiasX = 0;
                     Editor.Controls.MGGraphicalOutput.tileBiasY = 0;
-                    // Планируем обновление позиции скроллов в следующей кадре
-                    Editor.Controls.MGGraphicalOutput.UpdateScrollPosition();
+                    // Планируем обновление scrollów
+                    needScrollUpdate = true;
                     
                     GameData.Initialize();
                     FileManager.WriteConfig();
@@ -319,6 +320,15 @@ namespace Editor
             var cur = Editor.Controls.MGGraphicalOutput.GetCursor();
             CursorXCor.Text = cur.X.ToString();
             CursorYCor.Text = cur.Y.ToString();
+            
+            // Sprawdzamy czy trzeba zaktualizować scrolle
+            if (needScrollUpdate)
+            {
+                // Proste przywrócenie pozycji scrollów na podstawie tileBias
+                Editor.Controls.MGGraphicalOutput.ForceUpdateScrollPositions();
+                needScrollUpdate = false;
+            }
+            
             timer.Stop();
         }
         //------------------------------------------------------------------------------------------------------------------------

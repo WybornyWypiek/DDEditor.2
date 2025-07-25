@@ -66,7 +66,6 @@ namespace Editor.Controls
         public static int tileBiasY, tileBiasX; // Координаты смещения экрана в плитках
         long timer = 0;
         static long lastCoordinateSaveTimer = 0;
-        public static bool needScrollUpdate = false;
 
 
         //------------------------------------------------------------------------------------------------------------------------
@@ -146,15 +145,6 @@ namespace Editor.Controls
 
                 UpdateTileTexture();
                 UpdateShowObjects();
-
-                // Sprawdzamy czy trzeba zaktualizować pozycję scrollów
-                if (needScrollUpdate)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Updating scroll position: tileBias=({tileBiasX},{tileBiasY}), Window=({WindowWidth},{WindowHeight})");
-                    UpdateScrollPosition();
-                    System.Diagnostics.Debug.WriteLine($"New scroll positions: hScrollPos={hScrollPos}, vScrollPos={vScrollPos}");
-                    needScrollUpdate = false;
-                }
 
                 if (!mouseClickHandler) // Обработка нажатия на ползунок
                 {
@@ -1054,40 +1044,16 @@ namespace Editor.Controls
         {
             return new Point(tileBiasX, tileBiasY);
         }
-        public static void UpdateScrollPosition()
+        private static void UpdateScrollPosition()
         {
             if (tileBiasX < 0) tileBiasX = 0;
-            if (WindowWidth > 0 && tileBiasX > Vars.maxHorizontalTails - 1 - WindowWidth / Vars.tileSize) tileBiasX = Vars.maxHorizontalTails - WindowWidth / Vars.tileSize;
+            if (tileBiasX > Vars.maxHorizontalTails - 1 - WindowWidth / Vars.tileSize) tileBiasX = Vars.maxHorizontalTails - WindowWidth / Vars.tileSize;
             if (tileBiasY < 0) tileBiasY = 0;
-            if (WindowHeight > 0 && tileBiasY > Vars.maxVerticalTails - 1 - WindowHeight / Vars.tileSize) tileBiasY = Vars.maxVerticalTails - WindowHeight / Vars.tileSize;
-            
-            // Zabezpieczenie przed dzieleniem przez zero
-            int hDenominator = Vars.maxHorizontalTails - 1 - (WindowWidth > 0 ? WindowWidth / Vars.tileSize : 0);
-            int vDenominator = Vars.maxVerticalTails - 1 - (WindowHeight > 0 ? WindowHeight / Vars.tileSize : 0);
-            
-            if (hDenominator > 0 && WindowWidth > 53)
-            {
-                hScrollPos = tileBiasX * (WindowWidth - 53) / hDenominator;
-                hScrollPos += 1;
-                if (hScrollPos < 0) hScrollPos = 0;
-                if (hScrollPos > WindowWidth - 53) hScrollPos = WindowWidth - 53;
-            }
-            else
-            {
-                hScrollPos = 1;
-            }
-            
-            if (vDenominator > 0 && WindowHeight > 53)
-            {
-                vScrollPos = tileBiasY * (WindowHeight - 53) / vDenominator;
-                vScrollPos += 1;
-                if (vScrollPos < 0) vScrollPos = 0;
-                if (vScrollPos > WindowHeight - 53) vScrollPos = WindowHeight - 53;
-            }
-            else
-            {
-                vScrollPos = 1;
-            }
+            if (tileBiasY > Vars.maxVerticalTails - 1 - WindowHeight / Vars.tileSize) tileBiasY = Vars.maxVerticalTails - WindowHeight / Vars.tileSize;
+            hScrollPos = tileBiasX * (WindowWidth - 53) / (Vars.maxHorizontalTails - 1 - WindowWidth / Vars.tileSize);
+            vScrollPos = tileBiasY * (WindowHeight - 53) / (Vars.maxVerticalTails - 1 - WindowHeight / Vars.tileSize);
+            hScrollPos += 1;
+            vScrollPos += 1;
             
             // Сохраняем координаты каждые 3 секунды при изменении
             long currentTime = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -1106,6 +1072,33 @@ namespace Editor.Controls
             
             EditForm.timer.Start();
         }
+        
+        public static void ForceUpdateScrollPositions()
+        {
+            // Prosty update pozycji scrollów na podstawie tileBiasX/Y
+            if (WindowWidth > 53 && WindowHeight > 53)
+            {
+                int maxScrollX = Vars.maxHorizontalTails - WindowWidth / Vars.tileSize;
+                int maxScrollY = Vars.maxVerticalTails - WindowHeight / Vars.tileSize;
+                
+                if (maxScrollX > 0)
+                    hScrollPos = 1 + tileBiasX * (WindowWidth - 53) / maxScrollX;
+                else 
+                    hScrollPos = 1;
+                    
+                if (maxScrollY > 0)
+                    vScrollPos = 1 + tileBiasY * (WindowHeight - 53) / maxScrollY;
+                else
+                    vScrollPos = 1;
+                    
+                // Ograniczenia
+                if (hScrollPos < 1) hScrollPos = 1;
+                if (hScrollPos > WindowWidth - 53) hScrollPos = WindowWidth - 53;
+                if (vScrollPos < 1) vScrollPos = 1;
+                if (vScrollPos > WindowHeight - 53) vScrollPos = WindowHeight - 53;
+            }
+        }
+        
         private static ulong DrawDepth(int Ypos, int Xpos, int ID) // Число, характеризующее парядок вывода объекта на экран
         {
             //ObjectBuffer.drawDepth = (ObjectBuffer.Ypos + GameData.objectDesc[GameData.objects[ObjectBuffer.ID].SpriteID].TouchPoint.Y + tileBiasY * Vars.tileSize) * Vars.maxHorizontalTails * Vars.tileSize + ObjectBuffer.Xpos + tileBiasX * Vars.tileSize;
