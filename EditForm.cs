@@ -85,8 +85,8 @@ namespace Editor
                 // Восстанавливаем последние координаты пользователя
                 Editor.Controls.MGGraphicalOutput.tileBiasX = GameData.lastUserTileBiasX;
                 Editor.Controls.MGGraphicalOutput.tileBiasY = GameData.lastUserTileBiasY;
-                // Планируем обновление позиции скроллов в следующей кадре
-                Editor.Controls.MGGraphicalOutput.needScrollUpdate = true;
+                // Планируем обновление позиции скроллов в следующей кадре!!
+                Editor.Controls.MGGraphicalOutput.UpdateScrollPosition();
                 
                 GameData.READY = true;
                 informationField.Text = $"Loading textures - Last position: {GameData.lastUserTileBiasX},{GameData.lastUserTileBiasY}";
@@ -178,7 +178,7 @@ namespace Editor
                     Editor.Controls.MGGraphicalOutput.tileBiasX = 0;
                     Editor.Controls.MGGraphicalOutput.tileBiasY = 0;
                     // Планируем обновление позиции скроллов в следующей кадре
-                    Editor.Controls.MGGraphicalOutput.needScrollUpdate = true;
+                    Editor.Controls.MGGraphicalOutput.UpdateScrollPosition();
                     
                     GameData.Initialize();
                     FileManager.WriteConfig();
