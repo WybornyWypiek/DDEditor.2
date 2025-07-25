@@ -1,4 +1,4 @@
-﻿using DivEditor;
+using DivEditor;
 using DivEditor.Controls;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
@@ -65,6 +65,7 @@ namespace Editor.Controls
         static int hScrollDiff = 0;
         public static int tileBiasY, tileBiasX; // Координаты смещения экрана в плитках
         long timer = 0;
+        static long lastCoordinateSaveTimer = 0;
 
 
         //------------------------------------------------------------------------------------------------------------------------
@@ -1053,6 +1054,22 @@ namespace Editor.Controls
             vScrollPos = tileBiasY * (WindowHeight - 53) / (Vars.maxVerticalTails - 1 - WindowHeight / Vars.tileSize);
             hScrollPos += 1;
             vScrollPos += 1;
+            
+            // Сохраняем координаты каждые 3 секунды при изменении
+            long currentTime = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (currentTime - lastCoordinateSaveTimer > 30000000) // ~3 секунды в тиках
+            {
+                lastCoordinateSaveTimer = currentTime;
+                try
+                {
+                    DivEditor.Controls.FileManager.SaveUserCoordinates();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("Error saving coordinates: " + ex.Message);
+                }
+            }
+            
             EditForm.timer.Start();
         }
         private static ulong DrawDepth(int Ypos, int Xpos, int ID) // Число, характеризующее парядок вывода объекта на экран

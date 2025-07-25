@@ -1,4 +1,4 @@
-﻿using DivEditor.Controls;
+using DivEditor.Controls;
 using Editor.Controls;
 using DivEditor;
 using Lzo64;
@@ -45,6 +45,22 @@ namespace Editor
             timer.Interval = 100;
             timer.Start();
             eggsPicturePNG.Dock = DockStyle.Fill;
+            
+            // Добавляем обработчик закрытия формы для сохранения координат
+            this.FormClosing += EditForm_FormClosing;
+        }
+        //------------------------------------------------------------------------------------------------------------------------
+        private void EditForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            // Сохраняем координаты при закрытии приложения
+            try
+            {
+                FileManager.SaveUserCoordinates();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error saving coordinates on close: " + ex.Message);
+            }
         }
         //------------------------------------------------------------------------------------------------------------------------
         private void Form2_Load(object sender, EventArgs e)
@@ -65,8 +81,13 @@ namespace Editor
                 System.Diagnostics.Debug.WriteLine(GameData.pathToDivFolder);
                 System.Diagnostics.Debug.WriteLine(GameData.pathToEditWorldFolder);
                 System.Diagnostics.Debug.WriteLine(GameData.worldMapNumber);
+                
+                // Восстанавливаем последние координаты пользователя
+                Editor.Controls.MGGraphicalOutput.tileBiasX = GameData.lastUserTileBiasX;
+                Editor.Controls.MGGraphicalOutput.tileBiasY = GameData.lastUserTileBiasY;
+                
                 GameData.READY = true;
-                informationField.Text = "Loading textures";
+                informationField.Text = $"Loading textures - Last position: {GameData.lastUserTileBiasX},{GameData.lastUserTileBiasY}";
             }
             else
             {
@@ -148,6 +169,13 @@ namespace Editor
                     informationField.Text = path + " open";
                     GameData.pathToEditWorldFolder = path.Remove(path.Length - 9, 9);
                     GameData.worldMapNumber = int.Parse(path.Remove(0, path.Length - 1));
+                    
+                    // Сбрасываем координаты при загрузке нового мира
+                    GameData.lastUserTileBiasX = 0;
+                    GameData.lastUserTileBiasY = 0;
+                    Editor.Controls.MGGraphicalOutput.tileBiasX = 0;
+                    Editor.Controls.MGGraphicalOutput.tileBiasY = 0;
+                    
                     GameData.Initialize();
                     FileManager.WriteConfig();
                     Editor.Controls.MGGraphicalOutput.UpdateFullTileTexture();
