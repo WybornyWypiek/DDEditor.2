@@ -1,4 +1,4 @@
-﻿using DivEditor.Controls;
+using DivEditor.Controls;
 using Editor.Controls;
 using DivEditor;
 using Lzo64;
@@ -31,6 +31,7 @@ namespace Editor
         public static int selectTollBarPage = 0;
         public static int effects = 0;
         public static Timer? timer;
+        public static bool needScrollUpdate = false;
         private int treeViewCounter = 0;
         private int objectsTreeViewNodePrevious = 0;
         XmlDocument xmlDoc;
@@ -45,6 +46,22 @@ namespace Editor
             timer.Interval = 100;
             timer.Start();
             eggsPicturePNG.Dock = DockStyle.Fill;
+            
+            // Добавляем обработчик закрытия формы для сохранения координат
+            this.FormClosing += EditForm_FormClosing;
+        }
+        //------------------------------------------------------------------------------------------------------------------------
+        private void EditForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            // Сохраняем координаты при закрытии приложения
+            try
+            {
+                FileManager.SaveUserCoordinates();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error saving coordinates on close: " + ex.Message);
+            }
         }
         //------------------------------------------------------------------------------------------------------------------------
         private void Form2_Load(object sender, EventArgs e)
@@ -65,8 +82,15 @@ namespace Editor
                 System.Diagnostics.Debug.WriteLine(GameData.pathToDivFolder);
                 System.Diagnostics.Debug.WriteLine(GameData.pathToEditWorldFolder);
                 System.Diagnostics.Debug.WriteLine(GameData.worldMapNumber);
+                
+                // Восстанавливаем последние координаты пользователя
+                Editor.Controls.MGGraphicalOutput.tileBiasX = GameData.lastUserTileBiasX;
+                Editor.Controls.MGGraphicalOutput.tileBiasY = GameData.lastUserTileBiasY;
+                // Планируем обновление scrollów
+                needScrollUpdate = true;
+                
                 GameData.READY = true;
-                informationField.Text = "Loading textures";
+                informationField.Text = $"Loading textures - Last position: {GameData.lastUserTileBiasX},{GameData.lastUserTileBiasY}";
             }
             else
             {
@@ -148,6 +172,15 @@ namespace Editor
                     informationField.Text = path + " open";
                     GameData.pathToEditWorldFolder = path.Remove(path.Length - 9, 9);
                     GameData.worldMapNumber = int.Parse(path.Remove(0, path.Length - 1));
+                    
+                    // Сбрасываем координаты при загрузке нового мира
+                    GameData.lastUserTileBiasX = 0;
+                    GameData.lastUserTileBiasY = 0;
+                    Editor.Controls.MGGraphicalOutput.tileBiasX = 0;
+                    Editor.Controls.MGGraphicalOutput.tileBiasY = 0;
+                    // Планируем обновление scrollów
+                    needScrollUpdate = true;
+                    
                     GameData.Initialize();
                     FileManager.WriteConfig();
                     Editor.Controls.MGGraphicalOutput.UpdateFullTileTexture();
@@ -287,6 +320,15 @@ namespace Editor
             var cur = Editor.Controls.MGGraphicalOutput.GetCursor();
             CursorXCor.Text = cur.X.ToString();
             CursorYCor.Text = cur.Y.ToString();
+            
+            // Sprawdzamy czy trzeba zaktualizować scrolle
+            if (needScrollUpdate)
+            {
+                // Proste przywrócenie pozycji scrollów na podstawie tileBias
+                Editor.Controls.MGGraphicalOutput.ForceUpdateScrollPositions();
+                needScrollUpdate = false;
+            }
+            
             timer.Stop();
         }
         //------------------------------------------------------------------------------------------------------------------------

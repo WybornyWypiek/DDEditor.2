@@ -1,4 +1,4 @@
-﻿using Editor;
+using Editor;
 using SharpDX.Direct3D9;
 using System;
 using System.Collections.Generic;
@@ -26,6 +26,8 @@ namespace DivEditor.Controls
         public static List<Eggs> Eggs = new ();                             // Список болванчиков
         public static List<AgentClasses> AC = new();                        // Список классов болванчиков
         public static string[]? AgentClassesName;                           // Имена классов нпс
+        public static int lastUserTileBiasX = 0;                             // Последние координаты пользователя X
+        public static int lastUserTileBiasY = 0;                             // Последние координаты пользователя Y
 
         public static void Initialize()
         {

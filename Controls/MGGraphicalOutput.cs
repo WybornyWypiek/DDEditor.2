@@ -1,4 +1,4 @@
-﻿using DivEditor;
+using DivEditor;
 using DivEditor.Controls;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
@@ -65,6 +65,7 @@ namespace Editor.Controls
         static int hScrollDiff = 0;
         public static int tileBiasY, tileBiasX; // Координаты смещения экрана в плитках
         long timer = 0;
+        static long lastCoordinateSaveTimer = 0;
 
 
         //------------------------------------------------------------------------------------------------------------------------
@@ -1053,8 +1054,51 @@ namespace Editor.Controls
             vScrollPos = tileBiasY * (WindowHeight - 53) / (Vars.maxVerticalTails - 1 - WindowHeight / Vars.tileSize);
             hScrollPos += 1;
             vScrollPos += 1;
+            
+            // Сохраняем координаты каждые 3 секунды при изменении
+            long currentTime = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (currentTime - lastCoordinateSaveTimer > 30000000) // ~3 секунды в тиках
+            {
+                lastCoordinateSaveTimer = currentTime;
+                try
+                {
+                    DivEditor.Controls.FileManager.SaveUserCoordinates();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("Error saving coordinates: " + ex.Message);
+                }
+            }
+            
             EditForm.timer.Start();
         }
+        
+        public static void ForceUpdateScrollPositions()
+        {
+            // Prosty update pozycji scrollów na podstawie tileBiasX/Y
+            if (WindowWidth > 53 && WindowHeight > 53)
+            {
+                int maxScrollX = Vars.maxHorizontalTails - WindowWidth / Vars.tileSize;
+                int maxScrollY = Vars.maxVerticalTails - WindowHeight / Vars.tileSize;
+                
+                if (maxScrollX > 0)
+                    hScrollPos = 1 + tileBiasX * (WindowWidth - 53) / maxScrollX;
+                else 
+                    hScrollPos = 1;
+                    
+                if (maxScrollY > 0)
+                    vScrollPos = 1 + tileBiasY * (WindowHeight - 53) / maxScrollY;
+                else
+                    vScrollPos = 1;
+                    
+                // Ograniczenia
+                if (hScrollPos < 1) hScrollPos = 1;
+                if (hScrollPos > WindowWidth - 53) hScrollPos = WindowWidth - 53;
+                if (vScrollPos < 1) vScrollPos = 1;
+                if (vScrollPos > WindowHeight - 53) vScrollPos = WindowHeight - 53;
+            }
+        }
+        
         private static ulong DrawDepth(int Ypos, int Xpos, int ID) // Число, характеризующее парядок вывода объекта на экран
         {
             //ObjectBuffer.drawDepth = (ObjectBuffer.Ypos + GameData.objectDesc[GameData.objects[ObjectBuffer.ID].SpriteID].TouchPoint.Y + tileBiasY * Vars.tileSize) * Vars.maxHorizontalTails * Vars.tileSize + ObjectBuffer.Xpos + tileBiasX * Vars.tileSize;
