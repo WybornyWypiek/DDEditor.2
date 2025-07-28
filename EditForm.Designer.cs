@@ -1,4 +1,4 @@
-﻿namespace Editor
+namespace Editor
 {
     partial class EditForm
     {
@@ -55,6 +55,7 @@
             splitObjectsContainer = new SplitContainer();
             objectsBox = new ListBox();
             ObjectsTreeView = new TreeView();
+            objectSearchTextBox = new TextBox();
             objectsPictureBox = new PictureBox();
             eggsTabPage3 = new TabPage();
             splitContainer1 = new SplitContainer();
@@ -357,6 +358,7 @@
             // 
             splitObjectsContainer.Panel1.Controls.Add(objectsBox);
             splitObjectsContainer.Panel1.Controls.Add(ObjectsTreeView);
+            splitObjectsContainer.Panel1.Controls.Add(objectSearchTextBox);
             // 
             // splitObjectsContainer.Panel2
             // 
@@ -380,12 +382,24 @@
             // 
             // ObjectsTreeView
             // 
-            ObjectsTreeView.Location = new Point(0, 0);
+            ObjectsTreeView.Location = new Point(0, 25);
             ObjectsTreeView.Name = "ObjectsTreeView";
-            ObjectsTreeView.Size = new Size(171, 549);
+            ObjectsTreeView.Size = new Size(171, 524);
             ObjectsTreeView.TabIndex = 0;
             ObjectsTreeView.AfterSelect += ObjectsTreeView_AfterSelect;
             ObjectsTreeView.KeyDown += ObjectsTreeView_KeyDown;
+            // 
+            // objectSearchTextBox
+            // 
+            objectSearchTextBox.Location = new Point(0, 0);
+            objectSearchTextBox.Name = "objectSearchTextBox";
+            objectSearchTextBox.Size = new Size(171, 23);
+            objectSearchTextBox.TabIndex = 2;
+            objectSearchTextBox.Text = "Search objects...";
+            objectSearchTextBox.ForeColor = Color.Gray;
+            objectSearchTextBox.TextChanged += ObjectSearchTextBox_TextChanged;
+            objectSearchTextBox.Enter += ObjectSearchTextBox_Enter;
+            objectSearchTextBox.Leave += ObjectSearchTextBox_Leave;
             // 
             // objectsPictureBox
             // 
@@ -871,6 +885,7 @@
         private ToolStripButton setCursor;
         private TreeView ObjectsTreeView;
         private ListBox objectsBox;
+        private TextBox objectSearchTextBox;
         private PictureBox objectsPictureBox;
         private ToolStripButton StepObjectButton;
         private ToolStripButton TESTBUTTON;
