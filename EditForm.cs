@@ -1,4 +1,4 @@
-﻿using DivEditor.Controls;
+using DivEditor.Controls;
 using Editor.Controls;
 using DivEditor;
 using Lzo64;
@@ -228,8 +228,9 @@ namespace Editor
                 StepObjectButton.Visible = true;
                 SearchObjectButton.Visible = true;
             }
-            ObjectsTreeView.Size = new System.Drawing.Size(splitObjectsContainer.Panel1.Width / 2, splitObjectsContainer.Panel1.Height);
+            ObjectsTreeView.Size = new System.Drawing.Size(splitObjectsContainer.Panel1.Width / 2, splitObjectsContainer.Panel1.Height - 25);
             objectsBox.Size = new System.Drawing.Size(splitObjectsContainer.Panel1.Width / 2, splitObjectsContainer.Panel1.Height);
+            objectSearchTextBox.Size = new System.Drawing.Size(splitObjectsContainer.Panel1.Width / 2, 23);
         }
         //------------------------------------------------------------------------------------------------------------------------
         public int getEffects()
@@ -369,7 +370,8 @@ namespace Editor
         private void MainTollbar_SizeChanged(object sender, EventArgs e)
         {
             objectsBox.Size = new System.Drawing.Size(splitObjectsContainer.Panel1.Width / 2, splitObjectsContainer.Panel1.Height);
-            ObjectsTreeView.Size = new System.Drawing.Size(splitObjectsContainer.Panel1.Width / 2, objectsBox.Height);
+            ObjectsTreeView.Size = new System.Drawing.Size(splitObjectsContainer.Panel1.Width / 2, objectsBox.Height - 25);
+            objectSearchTextBox.Size = new System.Drawing.Size(splitObjectsContainer.Panel1.Width / 2, 23);
         }
         //------------------------------------------------------------------------------------------------------------------------
         private void ObjectsTreeView_AfterSelect(object sender, TreeViewEventArgs e)
@@ -402,8 +404,20 @@ namespace Editor
 
         private void ObjectsBox_SelectedIndexChanged(object sender, EventArgs e) // Выводим выбранный метаобъект в окно просмота
         {
-            string[] words = objectsBox.Text.Split(new char[] { ' ' });
-            if (words.Length > 1 && int.TryParse(words[1], out int objectSelect))
+            string text = objectsBox.Text;
+            int objectSelect = -1;
+            
+            // Obsługa nowego formatu "Object {ID} - {Name}" i starego "Object {ID}"
+            if (text.StartsWith("Object "))
+            {
+                string[] words = text.Split(new char[] { ' ', '-' });
+                if (words.Length > 1 && int.TryParse(words[1], out objectSelect))
+                {
+                    // Znaleziono ID
+                }
+            }
+            
+            if (objectSelect >= 0 && objectSelect < GameData.MObjects.Count)
             {
                 int objCount = GameData.MObjects[objectSelect].objects.Count;
                 Bitmap bitmap;
@@ -869,7 +883,8 @@ namespace Editor
         }
         private void objectsBox_SizeChanged(object sender, EventArgs e)
         {
-            ObjectsTreeView.Size = new System.Drawing.Size(splitObjectsContainer.Panel1.Width / 2, objectsBox.Height);
+            ObjectsTreeView.Size = new System.Drawing.Size(splitObjectsContainer.Panel1.Width / 2, objectsBox.Height - 25);
+            objectSearchTextBox.Size = new System.Drawing.Size(splitObjectsContainer.Panel1.Width / 2, 23);
         }
 
         private void helpToolStripMenuItem_Click(object sender, EventArgs e)
@@ -927,8 +942,20 @@ namespace Editor
         private void objectsBox_MouseDoubleClick(object sender, MouseEventArgs e) // Добавляем объект
         {
             //// 0 - мировой номер, 1 - SpriteID, 2 - поведение, 3 - координата Х, 4 - координата Y, 5 - сортировка
-            string[] words = objectsBox.Text.Split(new char[] { ' ' });
-            if (words.Length > 1 && int.TryParse(words[1], out int objectSelect))
+            string text = objectsBox.Text;
+            int objectSelect = -1;
+            
+            // Obsługa nowego formatu "Object {ID} - {Name}" i starego "Object {ID}"
+            if (text.StartsWith("Object "))
+            {
+                string[] words = text.Split(new char[] { ' ', '-' });
+                if (words.Length > 1 && int.TryParse(words[1], out objectSelect))
+                {
+                    // Znaleziono ID
+                }
+            }
+            
+            if (objectSelect >= 0 && objectSelect < GameData.MObjects.Count)
             {
                 MGGraphicalOutput.procMovingNewObject = true;
                 int objCount = GameData.MObjects[objectSelect].objects.Count;
@@ -1127,6 +1154,58 @@ namespace Editor
         public static bool IsKeyToggled(System.Windows.Forms.Keys key)
         {
             return KeyStates.Toggled == (GetKeyState(key) & KeyStates.Toggled);
+        }
+
+        private void ObjectSearchTextBox_TextChanged(object sender, EventArgs e)
+        {
+            // Ignoruj jeśli to jest tekst placeholder
+            if (objectSearchTextBox.ForeColor == Color.Gray)
+            {
+                return;
+            }
+            
+            string searchText = objectSearchTextBox.Text.ToLower().Trim();
+            
+            if (string.IsNullOrEmpty(searchText))
+            {
+                // Jeśli pole wyszukiwania jest puste, pokaż wszystkie obiekty z aktualnie wybranej kategorii
+                if (ObjectsTreeView.SelectedNode != null)
+                {
+                    ObjectsTreeView_AfterSelect(ObjectsTreeView, new TreeViewEventArgs(ObjectsTreeView.SelectedNode));
+                }
+                return;
+            }
+
+            // Wyszukaj obiekty po nazwie
+            objectsBox.Items.Clear();
+            for (int i = 0; i < GameData.objectDesc.Count; i++)
+            {
+                string objectName = GameData.objectDesc[i].Name.ToLower();
+                if (objectName.Contains(searchText))
+                {
+                    objectsBox.Items.Add($"Object {i} - {GameData.objectDesc[i].Name}");
+                }
+            }
+        }
+
+        private void ObjectSearchTextBox_Enter(object sender, EventArgs e)
+        {
+            // Usuń tekst placeholder gdy użytkownik klika w pole
+            if (objectSearchTextBox.ForeColor == Color.Gray)
+            {
+                objectSearchTextBox.Text = "";
+                objectSearchTextBox.ForeColor = Color.Black;
+            }
+        }
+
+        private void ObjectSearchTextBox_Leave(object sender, EventArgs e)
+        {
+            // Przywróć tekst placeholder jeśli pole jest puste
+            if (string.IsNullOrWhiteSpace(objectSearchTextBox.Text))
+            {
+                objectSearchTextBox.Text = "Search objects...";
+                objectSearchTextBox.ForeColor = Color.Gray;
+            }
         }
 
 
